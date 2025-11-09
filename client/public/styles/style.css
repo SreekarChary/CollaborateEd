@@ -1,0 +1,79 @@
+/* This file contains the custom CSS variables and utility styles */
+
+/* Custom scrollbar styling for better UX */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-color-dark); }
+::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-color-hover); }
+
+:root {
+    /* Light Theme Variables */
+    --primary-color: #0b2447; /* Deep Navy Blue for headers/sidebar links */
+    --secondary-color: #576cb7; /* Lighter Blue for highlights */
+    --accent-color: #ff8c00; /* Dark Orange for buttons/accents */
+    --accent-color-hover: #cc7000;
+    --bg-color-dark: #f9fafb; /* Gray 50 (Main Page Background) */
+    --bg-color-light: #ffffff; /* White (Cards/Sidebar Background) */
+    --text-color: #1f2937; /* Gray 800 (Dark Text) */
+    --border-color: #e5e7eb; /* Gray 200 */
+    --sidebar-width: 16rem;
+}
+
+.dark-mode {
+    /* Dark Theme Variables */
+    --bg-color-dark: #1f2937; /* Dark Gray (Main Page Background) */
+    --bg-color-light: #374151; /* Medium Gray (Cards/Sidebar Background) */
+    --text-color: #f3f4f6; /* Light Text */
+    --border-color: #4b5563; /* Gray 600 */
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-color-dark);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Sidebar Styles */
+#sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--bg-color-light);
+    border-right: 1px solid var(--border-color);
+    transition: background-color 0.3s, border-color 0.3s;
+    height: 100vh; /* Ensure sidebar covers full viewport height */
+    position: fixed; /* Keep it fixed */
+    top: 0;
+    padding-top: 4rem; /* Space for the fixed header */
+}
+
+/* Content Area for Main Pages */
+#main-content {
+    margin-left: var(--sidebar-width);
+    padding-top: 4rem; /* Space for the fixed header */
+    min-height: 100vh;
+    transition: margin-left 0.3s;
+}
+
+/* Chat Panel Styles */
+#chat-panel {
+    width: 20rem;
+    max-height: 80vh;
+    background-color: var(--bg-color-light);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transform: translateY(100%);
+    transition: transform 0.4s ease-out, background-color 0.3s;
+}
+
+#chat-panel.open {
+    transform: translateY(0);
+}
+
+/* Task Card Dragging Styles */
+.task-column {
+    min-width: 280px;
+    max-width: 300px;
+    height: 70vh;
+}
+.task-card {
+    cursor: grab;
+}

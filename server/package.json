@@ -1,0 +1,20 @@
+{
+  "name": "collaborateed-server",
+  "version": "1.0.0",
+  "description": "Backend API for CollaborateEd using Express and Firebase Firestore.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "./node_modules/.bin/nodemon src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "firebase-admin": "^12.1.0",
+    "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}

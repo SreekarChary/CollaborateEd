@@ -1,0 +1,23 @@
+{
+  "name": "collaborateed",
+  "version": "1.0.0",
+  "description": "Student Collaboration and Project Hub full-stack application.",
+  "main": "server/src/server.js",
+  "scripts": {
+    "server": "npm run dev --prefix server", 
+    "client": "live-server client/public --port=8080",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "install:all": "npm install && cd server && npm install"
+  },
+  "keywords": [
+    "collaboration",
+    "firebase",
+    "express"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "concurrently": "^8.2.2",
+    "live-server": "^1.2.2"
+  }
+}
