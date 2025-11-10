@@ -4,14 +4,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { alertModal } from './main.js'; // Import utility function from main.js
-import * as api from './api.js'; // To call server-side user registration logic
 
 // 🛑 IMPORTANT: REPLACE WITH YOUR LIVE FIREBASE PROJECT CONFIGURATION 🛑
+// Get these values from your Firebase Project Settings -> Web App Configuration
 const firebaseConfig = {
-    apiKey: "YOUR_CLIENT_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "YOUR_CLIENT_API_KEY", 
+    authDomain: "collaborateed-6cac6.firebaseapp.com",
+    projectId: "collaborateed-6cac6",
+    appId: "YOUR_APP_ID" // Find this in your Firebase Web App configuration
 };
 // ----------------------------------------------------------------------
 
@@ -28,11 +28,21 @@ try {
     onAuthStateChanged(auth, (user) => {
         if (user) {
             currentUserId = user.uid;
-            // The browser will be redirected to the dashboard after a real sign-in/sign-up
-            document.getElementById('profile-id-display').textContent = `ID: ${currentUserId}`;
+            // On successful auth, redirect/show dashboard
+            const profileDisplay = document.getElementById('profile-id-display');
+            if (profileDisplay) profileDisplay.textContent = `ID: ${currentUserId}`;
+            
+            // Show the main application shell
+            document.getElementById('login-register-page').classList.add('hidden');
+            document.getElementById('main-app-shell').classList.remove('hidden');
+            
+            // Dispatch event to main.js to load the dashboard content
             document.dispatchEvent(new Event('authReady'));
         } else {
+            // User is logged out or session expired
             currentUserId = null;
+            document.getElementById('main-app-shell').classList.add('hidden');
+            document.getElementById('login-register-page').classList.remove('hidden');
         }
     });
 } catch (error) {
@@ -42,14 +52,8 @@ try {
 // --- NEW REAL AUTHENTICATION FUNCTIONS ---
 export const handleRegistration = async (email, password) => {
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        
-        // Optionally register user details on the backend (e.g., to create a Firestore user profile)
-        // await api.registerUser({ uid: user.uid, email: user.email });
-
-        alertModal('Success', 'Registration successful! You are now logged in.');
-        window.location.reload(); // Reloads to show dashboard
+        await createUserWithEmailAndPassword(auth, email, password);
+        // Auth state change listener handles UI navigation upon successful sign-up
     } catch (error) {
         alertModal('Registration Failed', error.message);
     }
@@ -58,14 +62,33 @@ export const handleRegistration = async (email, password) => {
 export const handleLogin = async (email, password) => {
     try {
         await signInWithEmailAndPassword(auth, email, password);
-        // On successful login, onAuthStateChanged handles session update and navigation
+        // Auth state change listener handles UI navigation upon successful sign-in
     } catch (error) {
         alertModal('Login Failed', error.message);
     }
 };
 
 export const handleLogout = async () => {
-    // ... (Your existing logout logic remains the same)
+    try {
+        await signOut(auth);
+    } catch (error) {
+        alertModal('Logout Failed', 'Could not log out.');
+    }
 };
 
-// ... (Your existing setupDashboardListeners logic remains the same)
+export const setupDashboardListeners = (updateCountCallback) => {
+    if (!db || !currentUserId) return () => {};
+
+    // This query path assumes you have a 'tasks' collection in your Firestore root
+    const tasksCollection = collection(db, 'tasks'); 
+    
+    // Query tasks assigned to the current user that are 'in_progress'
+    const q = query(tasksCollection, where("status", "==", "in_progress"), where("assigneeId", "==", currentUserId)); 
+
+    return onSnapshot(q, (snapshot) => {
+        let ongoingCount = snapshot.docs.length;
+        updateCountCallback(ongoingCount);
+    }, (error) => {
+        console.error("Error fetching ongoing tasks:", error);
+    });
+};

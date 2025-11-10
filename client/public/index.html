@@ -6,7 +6,7 @@
     <title>CollaborateEd: Student Project Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="stylesheet" href="/styles/style.css">
+    <link rel="stylesheet" href="./styles/style.css">
 </head>
 <body>
 
@@ -24,12 +24,12 @@
                 <input type="email" id="auth-email" placeholder="Email" class="w-full p-3 mb-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white focus:ring-primary-color focus:border-primary-color">
                 <input type="password" id="auth-password" placeholder="Password" class="w-full p-3 mb-6 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white focus:ring-primary-color focus:border-primary-color">
 
-                <button onclick="simulateLogin()" class="w-full p-3 bg-primary-color text-white font-semibold rounded-lg hover:bg-secondary-color transition-colors duration-200 shadow-md">
-                    Log In (Simulated)
+                <button onclick="handleAuthSubmit(false)" class="w-full p-3 bg-primary-color text-white font-semibold rounded-lg hover:bg-secondary-color transition-colors duration-200 shadow-md">
+                    Log In
                 </button>
 
                 <p class="mt-4 text-sm text-center text-gray-600 dark:text-gray-400">
-                    <a href="#" onclick="alertModal('Feature Disabled', 'Registration and full login are disabled in this preview.')" class="text-primary-color hover:underline">
+                    <a href="#" onclick="handleAuthSubmit(true)" class="text-primary-color hover:underline">
                         Need an account? Register
                     </a>
                 </p>
@@ -37,87 +37,7 @@
         </div>
 
         <div id="main-app-shell" class="h-full hidden">
-            <header class="h-16 flex items-center justify-between px-4 border-b border-border-color bg-bg-color-light sticky top-0 z-10 transition-colors">
-                <div class="text-xl font-bold text-primary-color cursor-pointer" onclick="navigate('dashboard')">
-                    CollaborateEd
-                </div>
-                <div class="flex items-center space-x-4">
-                    <button class="text-gray-500 dark:text-gray-400 hover:text-primary-color transition-colors" onclick="toggleChatPanel()">
-                        <i data-lucide="message-square" class="w-6 h-6"></i>
-                    </button>
-                    <div class="relative group cursor-pointer" onclick="toggleProfileMenu()">
-                        <div id="profile-icon" class="w-10 h-10 rounded-full bg-accent-color flex items-center justify-center text-white font-semibold shadow-md">
-                            JD
-                        </div>
-                        <div id="profile-menu" class="absolute right-0 mt-2 w-48 bg-bg-color-light border border-border-color rounded-lg shadow-xl py-1 z-20 hidden">
-                            <div class="px-3 py-2 text-sm text-gray-700 dark:text-gray-300 font-medium">John Doe</div>
-                            <div class="px-3 py-1 text-xs text-gray-500 dark:text-gray-400" id="profile-id-display">ID: (loading...)</div>
-                            <hr class="border-border-color my-1">
-                            <a href="#" class="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" onclick="navigate('settings')">
-                                <i data-lucide="settings" class="inline-block w-4 h-4 mr-2"></i> Settings
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            <div class="flex flex-1 overflow-hidden relative">
-
-                <nav id="sidebar" class="flex flex-col h-full fixed top-16 left-0 bottom-0 py-6 px-4 text-sm z-10">
-                    <div class="flex-1 space-y-2">
-                        <a href="#" onclick="navigate('dashboard')" data-page="dashboard" class="nav-link flex items-center p-3 rounded-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors active-link">
-                            <i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i> Dashboard
-                        </a>
-                        <a href="#" onclick="navigate('tasks')" data-page="tasks" class="nav-link flex items-center p-3 rounded-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                            <i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Tasks
-                        </a>
-                        <a href="#" onclick="navigate('teams')" data-page="teams" class="nav-link flex items-center p-3 rounded-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                            <i data-lucide="users" class="w-5 h-5 mr-3"></i> Teams
-                        </a>
-                    </div>
-
-                    <div class="pt-6 border-t border-border-color">
-                        <a href="#" onclick="navigate('settings')" data-page="settings" class="nav-link flex items-center p-3 rounded-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                            <i data-lucide="settings" class="w-5 h-5 mr-3"></i> Settings
-                        </a>
-                    </div>
-                </nav>
-
-                <main id="main-content" class="flex-1 overflow-y-auto pt-4 pb-16 px-6">
-                    <div id="page-dashboard"></div>
-                    <div id="page-tasks" class="hidden"></div>
-                    <div id="page-teams" class="hidden"></div>
-                    <div id="page-settings" class="hidden"></div>
-                </main>
-
-                <div id="chat-toggle-button" class="fixed bottom-0 right-4 p-3 bg-primary-color text-white rounded-t-lg shadow-xl cursor-pointer z-20" onclick="toggleChatPanel()">
-                    <i data-lucide="message-circle" class="w-6 h-6 inline mr-2"></i> Chat
-                </div>
-
-                <div id="chat-panel" class="fixed bottom-0 right-0 h-4/5 flex flex-col rounded-t-xl z-20 transition-all duration-300 ease-in-out border border-border-color">
-                    <div class="p-4 flex justify-between items-center border-b border-border-color cursor-pointer" onclick="toggleChatPanel()">
-                        <h2 class="text-lg font-semibold">Real-time Chat</h2>
-                        <i data-lucide="x" class="w-5 h-5 text-gray-500 hover:text-text-color"></i>
-                    </div>
-                    <div class="flex-1 overflow-hidden">
-                        <div class="flex border-b border-border-color">
-                            <button id="tab-private" class="flex-1 p-3 text-sm font-medium border-r border-border-color bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onclick="switchChat('private')">Private Chats</button>
-                            <button id="tab-team" class="flex-1 p-3 text-sm font-medium bg-bg-color-light hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onclick="switchChat('team')">Team Chats</button>
-                        </div>
-                        <div id="chat-content-private" class="p-3 h-full overflow-y-auto">
-                            <p class="text-gray-500 dark:text-gray-400 text-sm">Private messages will load here...</p>
-                        </div>
-                        <div id="chat-content-team" class="p-3 h-full overflow-y-auto hidden">
-                            <p class="text-gray-500 dark:text-gray-400 text-sm">Team discussion threads will load here...</p>
-                        </div>
-                    </div>
-                    <div class="p-4 border-t border-border-color">
-                        <input type="text" placeholder="Send a message..." class="w-full p-2 border border-border-color rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white text-sm">
-                    </div>
-                </div>
-
             </div>
-        </div>
 
         <div id="alert-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
             <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-sm border border-gray-200 dark:border-gray-700">

@@ -1,15 +1,16 @@
 // client/public/api.js - Centralized module for making all HTTP requests to the backend server.
 
-// 🛑 IMPORTANT: CHANGE THIS URL TO YOUR PUBLIC BACKEND ADDRESS 🛑
-const BASE_URL = 'http://localhost:3000/api'; 
-// Example Public URL: const BASE_URL = 'https://collaborateed-api.com/api';
+// 🛑 IMPORTANT: CHANGE THIS URL TO YOUR LIVE, PUBLIC BACKEND ADDRESS 🛑
+// If you host your Express server on Render, Heroku, or Google Cloud Run, use that URL here.
+const BASE_URL = 'https://your-public-backend-url.com/api'; 
+// Until deployed, keep this as localhost:3000 to test the server:
+// const BASE_URL = 'http://localhost:3000/api'; 
 
 async function request(endpoint, options = {}) {
-    // ... (rest of the request function remains the same)
     const defaultOptions = {
         headers: {
             'Content-Type': 'application/json',
-            // 'Authorization': `Bearer ${localStorage.getItem('token')}`, 
+            // 'Authorization': `Bearer ${localStorage.getItem('token')}`, // Add session token for real auth
         },
         ...options,
     };
@@ -34,18 +35,18 @@ async function request(endpoint, options = {}) {
 }
 
 // --- Dashboard Endpoints ---
-export const getDashboardData = () => request('/tasks/dashboard', { method: 'GET' });
+export const getDashboardData = (userId) => request(`/tasks/dashboard?userId=${userId}`, { method: 'GET' });
 
 // --- Task Endpoints ---
-export const getTasksGrouped = () => request('/tasks', { method: 'GET' });
+export const getTasksGrouped = (userId) => request(`/tasks?userId=${userId}`, { method: 'GET' });
 
-export const updateTaskStatus = (taskId, newStatus) => request(`/tasks/${taskId}/status`, {
+export const updateTaskStatus = (taskId, newStatus, userId) => request(`/tasks/${taskId}/status`, {
     method: 'PUT',
-    body: { status: newStatus },
+    body: { status: newStatus, userId: userId },
 });
 
 // --- Team Endpoints ---
-export const getTeamsData = () => request('/teams', { method: 'GET' });
+export const getTeamsData = (userId) => request(`/teams?userId=${userId}`, { method: 'GET' });
 
 export const createTeam = (teamData) => request('/teams', {
     method: 'POST',

@@ -1,6 +1,5 @@
 // client/public/main.js - Contains core UI logic, routing, rendering, and state management.
 
-// FIX: Importing the new real authentication handlers
 import { setupDashboardListeners, handleLogout, handleLogin, handleRegistration } from './auth.js'; 
 import * as api from './api.js'; 
 import * as socket from './socket.js';
@@ -12,7 +11,7 @@ let currentTheme = localStorage.getItem('theme') || 'light';
 let dashboardUnsubscribe = null; 
 
 // --- Expose Global Functions for HTML onClick Events ---
-// REPLACED: window.simulateLogin is now the universal handleAuthSubmit
+// REPLACED: This function now handles both Login and Register form submissions
 window.handleAuthSubmit = handleAuthSubmit;
 window.navigate = navigate;
 window.toggleChatPanel = toggleChatPanel;
@@ -37,8 +36,10 @@ async function handleAuthSubmit(isRegister) {
     }
 
     if (isRegister) {
+        // Calls the real Firebase Registration function
         await handleRegistration(email, password);
     } else {
+        // Calls the real Firebase Login function
         await handleLogin(email, password);
     }
 }
@@ -86,8 +87,11 @@ function closeAlertModal() {
     document.getElementById('alert-modal').classList.remove('flex');
 }
 
-// NOTE: The original simulateLogin is effectively replaced by handleAuthSubmit(false) 
-// called from index.html
+// NOTE: The old simulateLogin is replaced. This is the new entry point for login.
+function simulateLogin() {
+    // This function is still needed if index.html uses it, but it should call the real handler
+    handleAuthSubmit(false); // Assume current click is for Login
+}
 
 function toggleProfileMenu() {
     const menu = document.getElementById('profile-menu');
@@ -213,7 +217,7 @@ async function renderDashboard() {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
             <div class="bg-bg-color-light p-6 rounded-xl shadow-lg border border-border-color cursor-pointer hover:shadow-xl transition-shadow" onclick="navigate('tasks')">
                 <span class="text-sm font-medium text-gray-500">Ongoing Tasks</span>
-                <p id="ongoing-tasks-count" class="text-4xl font-bold mt-2 text-text-color">${ongoingCount}</p>
+                <p id="ongoing-tasks-count" class="4xl font-bold mt-2 text-text-color">${ongoingCount}</p>
             </div>
             <div class="bg-bg-color-light p-6 rounded-xl shadow-lg border border-border-color">
                 <span class="text-sm font-medium text-gray-500">Upcoming Deadlines (> 36h)</span>
@@ -290,7 +294,7 @@ async function renderTasks() {
                 ondrop="drop(event, '${status}')" ondragover="allowDrop(event)">
                 ${taskList.map(renderTaskCard).join('')}
             </div>
-            <button class="mt-4 p-2 bg-primary-color/10 text-primary-color rounded-lg hover:bg-primary-color/20 text-sm transition-colors">
+            <button onclick="alertModal('Feature', 'Form to Create Task')" class="mt-4 p-2 bg-primary-color/10 text-primary-color rounded-lg hover:bg-primary-color/20 text-sm transition-colors">
                 <i data-lucide="plus" class="w-4 h-4 inline mr-1"></i> Add Task
             </button>
         </div>
@@ -392,7 +396,6 @@ async function drop(ev, newStatus) {
     const taskElement = document.getElementById(`task-${taskId}`);
 
     try {
-        // This is where you would call the API for real updates
         await api.updateTaskStatus(taskId, newStatus);
         
         const targetContainer = document.getElementById(`tasks-${newStatus}`);
