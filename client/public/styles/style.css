@@ -8,23 +8,27 @@
 
 :root {
     /* Light Theme Variables */
-    --primary-color: #0b2447; /* Deep Navy Blue for headers/sidebar links */
-    --secondary-color: #576cb7; /* Lighter Blue for highlights */
-    --accent-color: #ff8c00; /* Dark Orange for buttons/accents */
-    --accent-color-hover: #cc7000;
-    --bg-color-dark: #f9fafb; /* Gray 50 (Main Page Background) */
+    --primary-color: #008080; /* Teal/Green for headers/sidebar links */
+    --secondary-color: #00aaaa; /* Lighter Teal for highlights */
+    --accent-color: #00ff41; /* Bright Cyber Green for buttons/active elements */
+    --accent-color-hover: #00cc34;
+    --bg-color-dark: #f0f0f0; /* Light Gray (Main Page Background) */
     --bg-color-light: #ffffff; /* White (Cards/Sidebar Background) */
-    --text-color: #1f2937; /* Gray 800 (Dark Text) */
-    --border-color: #e5e7eb; /* Gray 200 */
+    --text-color: #1a1a1a; /* Very Dark Gray (Text) */
+    --border-color: #cccccc; /* Light Gray Border */
     --sidebar-width: 16rem;
 }
 
 .dark-mode {
     /* Dark Theme Variables */
-    --bg-color-dark: #1f2937; /* Dark Gray (Main Page Background) */
-    --bg-color-light: #374151; /* Medium Gray (Cards/Sidebar Background) */
-    --text-color: #f3f4f6; /* Light Text */
-    --border-color: #4b5563; /* Gray 600 */
+    --primary-color: #00ff41; /* Cyber Green (Header/Active Links) */
+    --secondary-color: #576cb7; /* Lighter Blue */
+    --accent-color: #ff8c00; /* Dark Orange */
+    --accent-color-hover: #cc7000;
+    --bg-color-dark: #121212; /* Deep Black (Main Page Background) */
+    --bg-color-light: #1f1f1f; /* Dark Gray (Cards/Sidebar Background) */
+    --text-color: #f0f0f0; /* Light Gray Text */
+    --border-color: #383838; /* Dark Border */
 }
 
 body {
@@ -40,16 +44,16 @@ body {
     background-color: var(--bg-color-light);
     border-right: 1px solid var(--border-color);
     transition: background-color 0.3s, border-color 0.3s;
-    height: 100vh; /* Ensure sidebar covers full viewport height */
-    position: fixed; /* Keep it fixed */
+    height: 100vh;
+    position: fixed;
     top: 0;
-    padding-top: 4rem; /* Space for the fixed header */
+    padding-top: 4rem;
 }
 
 /* Content Area for Main Pages */
 #main-content {
     margin-left: var(--sidebar-width);
-    padding-top: 4rem; /* Space for the fixed header */
+    padding-top: 4rem;
     min-height: 100vh;
     transition: margin-left 0.3s;
 }

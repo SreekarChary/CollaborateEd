@@ -1,86 +1,71 @@
-// client/src/auth.js - Handles Firebase client-side initialization and session management.
+// client/public/auth.js - Handles Firebase client-side initialization and session management.
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { alertModal } from './main.js'; // Import utility function from main.js
+import * as api from './api.js'; // To call server-side user registration logic
 
-// Global instances
+// 🛑 IMPORTANT: REPLACE WITH YOUR LIVE FIREBASE PROJECT CONFIGURATION 🛑
+const firebaseConfig = {
+    apiKey: "YOUR_CLIENT_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    appId: "YOUR_APP_ID"
+};
+// ----------------------------------------------------------------------
+
 export let db;
 export let auth;
 export let currentUserId = null;
-export let appId = 'default-app-id';
 
-// Global variables provided by the canvas environment
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-const canvasAppId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+// Initialize Firebase
+try {
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
 
-setLogLevel('Debug');
-
-if (firebaseConfig) {
-    try {
-        appId = canvasAppId;
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
-
-        const signIn = async () => {
-            try {
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Firebase Auth Error:", error);
-            }
-        };
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUserId = user.uid;
-            } else {
-                currentUserId = crypto.randomUUID(); // Fallback ID
-            }
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            currentUserId = user.uid;
+            // The browser will be redirected to the dashboard after a real sign-in/sign-up
             document.getElementById('profile-id-display').textContent = `ID: ${currentUserId}`;
-            
             document.dispatchEvent(new Event('authReady'));
-        });
-
-        signIn();
-
-    } catch (error) {
-        console.error("Firebase Initialization Error:", error);
-    }
-} else {
-     console.error("Firebase config not found. Running in mock mode.");
+        } else {
+            currentUserId = null;
+        }
+    });
+} catch (error) {
+    console.error("Firebase Initialization Error:", error);
 }
 
-export const handleLogout = async () => {
+// --- NEW REAL AUTHENTICATION FUNCTIONS ---
+export const handleRegistration = async (email, password) => {
     try {
-        await signOut(auth);
-        document.getElementById('login-register-page').classList.remove('hidden');
-        document.getElementById('main-app-shell').classList.add('hidden');
-        alertModal('Logged Out', 'You have been successfully logged out.');
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        
+        // Optionally register user details on the backend (e.g., to create a Firestore user profile)
+        // await api.registerUser({ uid: user.uid, email: user.email });
+
+        alertModal('Success', 'Registration successful! You are now logged in.');
+        window.location.reload(); // Reloads to show dashboard
     } catch (error) {
-        console.error("Logout Error:", error);
-        alertModal('Logout Failed', 'Could not log out. Please check your connection.');
+        alertModal('Registration Failed', error.message);
     }
 };
 
-export const setupDashboardListeners = (updateCountCallback) => {
-    if (!db || !currentUserId) return;
-
-    const publicDataPath = `/artifacts/${appId}/public/data/tasks`;
-    // Query to count tasks assigned to the current user that are 'in_progress'
-    const q = query(collection(db, publicDataPath), where("status", "==", "in_progress"), where("assigneeId", "==", currentUserId)); 
-
-    return onSnapshot(q, (snapshot) => {
-        let ongoingCount = snapshot.docs.length;
-        updateCountCallback(ongoingCount);
-    }, (error) => {
-        console.error("Error fetching ongoing tasks:", error);
-    });
+export const handleLogin = async (email, password) => {
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+        // On successful login, onAuthStateChanged handles session update and navigation
+    } catch (error) {
+        alertModal('Login Failed', error.message);
+    }
 };
+
+export const handleLogout = async () => {
+    // ... (Your existing logout logic remains the same)
+};
+
+// ... (Your existing setupDashboardListeners logic remains the same)

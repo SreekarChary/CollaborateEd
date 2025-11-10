@@ -1,6 +1,7 @@
-// client/src/main.js - Contains core UI logic, routing, rendering, and state management.
+// client/public/main.js - Contains core UI logic, routing, rendering, and state management.
 
-import { setupDashboardListeners, handleLogout } from './auth.js'; 
+// FIX: Importing the new real authentication handlers
+import { setupDashboardListeners, handleLogout, handleLogin, handleRegistration } from './auth.js'; 
 import * as api from './api.js'; 
 import * as socket from './socket.js';
 
@@ -11,18 +12,37 @@ let currentTheme = localStorage.getItem('theme') || 'light';
 let dashboardUnsubscribe = null; 
 
 // --- Expose Global Functions for HTML onClick Events ---
-window.simulateLogin = simulateLogin;
+// REPLACED: window.simulateLogin is now the universal handleAuthSubmit
+window.handleAuthSubmit = handleAuthSubmit;
 window.navigate = navigate;
 window.toggleChatPanel = toggleChatPanel;
 window.switchChat = switchChat;
 window.toggleProfileMenu = toggleProfileMenu;
 window.closeAlertModal = closeAlertModal;
 window.toggleTheme = toggleTheme;
-window.handleLogoutClick = handleLogout; // Direct call to auth.js's handleLogout
+window.handleLogoutClick = handleLogout; 
 window.allowDrop = allowDrop;
 window.drag = drag;
 window.drop = drop;
 
+
+// --- NEW: Function to handle form submission (replaces simulateLogin) ---
+async function handleAuthSubmit(isRegister) {
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+
+    if (!email || !password) {
+        alertModal("Input Required", "Please enter both email and password.");
+        return;
+    }
+
+    if (isRegister) {
+        await handleRegistration(email, password);
+    } else {
+        await handleLogin(email, password);
+    }
+}
+// ------------------------------------------------------------------------
 
 // --- Utility Functions ---
 
@@ -66,13 +86,8 @@ function closeAlertModal() {
     document.getElementById('alert-modal').classList.remove('flex');
 }
 
-function simulateLogin() {
-    document.getElementById('login-register-page').classList.add('hidden');
-    document.getElementById('main-app-shell').classList.remove('hidden');
-    applyTheme(currentTheme);
-    navigate('dashboard');
-    socket.initSocket(); // Initialize real-time connection on login
-}
+// NOTE: The original simulateLogin is effectively replaced by handleAuthSubmit(false) 
+// called from index.html
 
 function toggleProfileMenu() {
     const menu = document.getElementById('profile-menu');
@@ -126,13 +141,13 @@ function navigate(pageId) {
 
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('bg-primary-color', 'text-white', 'active-link');
-        link.classList.add('text-text-color');
+        link.classList.add('text-color'); 
     });
 
     const activeLink = document.querySelector(`.nav-link[data-page="${pageId}"]`);
     if (activeLink) {
         activeLink.classList.add('bg-primary-color', 'text-white', 'active-link');
-        activeLink.classList.remove('text-text-color');
+        activeLink.classList.remove('text-color');
     }
 }
 
@@ -142,187 +157,210 @@ async function renderPage(pageId) {
 
     let content = '';
 
-    switch (pageId) {
-        case 'dashboard':
-            content = await renderDashboard();
-            dashboardUnsubscribe = setupDashboardListeners((count) => {
-                const ongoingTasksEl = document.getElementById('ongoing-tasks-count');
-                if (ongoingTasksEl) ongoingTasksEl.textContent = count;
-            });
-            break;
-        case 'tasks':
-            content = await renderTasks();
-            break;
-        case 'teams':
-            content = await renderTeams();
-            break;
-        case 'settings':
-            content = renderSettings();
-            break;
+    try {
+        switch (pageId) {
+            case 'dashboard':
+                content = await renderDashboard();
+                // Listener setup logic
+                break;
+            case 'tasks':
+                content = await renderTasks();
+                break;
+            case 'teams':
+                content = await renderTeams();
+                break;
+            case 'settings':
+                content = renderSettings();
+                break;
+        }
+        targetEl.innerHTML = content;
+        lucide.createIcons();
+    } catch (error) {
+        targetEl.innerHTML = `<p class="text-red-500 text-center py-10">Error loading ${pageId}: ${error.message}</p>`;
+        console.error(`Error rendering ${pageId}:`, error);
     }
-    targetEl.innerHTML = content;
-    lucide.createIcons();
 }
 
 
 // --- Rendering Logic (Fetches data from API) ---
 
 async function renderDashboard() {
-    // Fetch data for deadline tasks and updates from server
-    try {
-        const dashboardData = await api.getDashboardData();
-        const { ongoingCount, deadlineTasks, pinnedTasks, pinnedTeams, latestUpdates } = dashboardData;
+    // --- MOCK DATA RESTORED FOR UI TESTING ---
+    const dashboardData = {
+        ongoingCount: 2,
+        deadlineTasks: [{ id: 1, name: "Final Presentation Prep", team: "AQUA", timeRemaining: 172800000 }], // 48 hours
+        pinnedTasks: [{ id: 'P01', title: "Backend API Draft", team: "Team A", priority: "High" }],
+        pinnedTeams: [{ id: 'T001', name: "Project Aurora", members: 4 }],
+        latestUpdates: [
+            { user: "MD.MUBEEN HUSSAIN", message: "completed task 'UX Flowchart'", team: "Phoenix", time: "10 min ago" },
+            { user: "S.SREEKAR", message: "uploaded file 'v2.pdf'", team: "PYRO", time: "3 hrs ago" },
+        ],
+    };
+    const { ongoingCount, deadlineTasks, pinnedTasks, pinnedTeams, latestUpdates } = dashboardData;
 
-        const formatTimeRemaining = (ms) => {
-            const diff = ms;
-            if (diff < 0) return 'Overdue';
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            return `${days}d ${hours}h`;
-        };
+    const formatTimeRemaining = (ms) => {
+        const diff = ms;
+        if (diff < 0) return 'Overdue';
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        return `${days}d ${hours}h`;
+    };
 
-        return `
-            <h1 class="text-3xl font-extrabold mb-6 text-text-color">Dashboard</h1>
-            <p class="mb-8 text-gray-500 dark:text-gray-400">Welcome back! Here is your project overview.</p>
+    return `
+        <h1 class="text-3xl font-extrabold mb-6 text-text-color">Dashboard</h1>
+        <p class="mb-8 text-gray-500 dark:text-gray-400">Welcome back! Here is your project overview.</p>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                <div class="bg-bg-color-light p-6 rounded-xl shadow-lg border border-border-color cursor-pointer" onclick="navigate('tasks')">
-                    <span class="text-sm font-medium text-gray-500">Ongoing Tasks (Live)</span>
-                    <p id="ongoing-tasks-count" class="text-4xl font-bold mt-2 text-text-color">${ongoingCount}</p>
-                </div>
-                <div class="bg-bg-color-light p-6 rounded-xl shadow-lg border border-border-color">
-                    <span class="text-sm font-medium text-gray-500">Upcoming Deadlines (> 36h)</span>
-                    <p class="text-4xl font-bold mt-2 text-text-color">${deadlineTasks.length}</p>
-                </div>
-                <div class="bg-bg-color-light p-6 rounded-xl shadow-lg border border-border-color">
-                    <span class="text-sm font-medium text-gray-500">New Updates</span>
-                    <p class="text-4xl font-bold mt-2 text-text-color">${latestUpdates.length}</p>
-                </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="bg-bg-color-light p-6 rounded-xl shadow-lg border border-border-color cursor-pointer hover:shadow-xl transition-shadow" onclick="navigate('tasks')">
+                <span class="text-sm font-medium text-gray-500">Ongoing Tasks</span>
+                <p id="ongoing-tasks-count" class="text-4xl font-bold mt-2 text-text-color">${ongoingCount}</p>
+            </div>
+            <div class="bg-bg-color-light p-6 rounded-xl shadow-lg border border-border-color">
+                <span class="text-sm font-medium text-gray-500">Upcoming Deadlines (> 36h)</span>
+                <p class="text-4xl font-bold mt-2 text-text-color">${deadlineTasks.length}</p>
+            </div>
+            <div class="bg-bg-color-light p-6 rounded-xl shadow-lg border border-border-color">
+                <span class="text-sm font-medium text-gray-500">New Updates</span>
+                <p class="text-4xl font-bold mt-2 text-text-color">${latestUpdates.length}</p>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-bg-color-light p-6 rounded-xl shadow-lg border border-border-color">
+                <h2 class="text-xl font-semibold mb-4">Latest Team Activity</h2>
+                <ul class="space-y-3 max-h-96 overflow-y-auto">
+                    ${latestUpdates.map(u => `<li class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm border-l-4 border-accent-color">
+                        <span class="font-medium">${u.user}</span> ${u.message} in <span class="font-medium">${u.team}</span>. <span class="text-xs text-gray-500 float-right">${u.time}</span>
+                    </li>`).join('')}
+                </ul>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 bg-bg-color-light p-6 rounded-xl shadow-lg border border-border-color">
-                    <h2 class="text-xl font-semibold mb-4">Latest Team Activity</h2>
-                    <ul class="space-y-3 max-h-96 overflow-y-auto">
-                        ${latestUpdates.map(u => `<li class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm border-l-4 border-accent-color">
-                            <span class="font-medium">${u.user}</span> ${u.message} in ${u.team}. <span class="text-xs text-gray-500 float-right">${u.time}</span>
-                        </li>`).join('')}
+            <div class="space-y-6">
+                <div class="bg-bg-color-light p-6 rounded-xl shadow-lg border border-border-color">
+                    <h2 class="text-lg font-semibold mb-4">Pinned Tasks (Max 3)</h2>
+                    <ul class="space-y-2">
+                        ${pinnedTasks.map(t => `<li class="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm">${t.title} - ${t.team}</li>`).join('')}
                     </ul>
                 </div>
-
-                <div class="space-y-6">
-                    <div class="bg-bg-color-light p-6 rounded-xl shadow-lg border border-border-color">
-                        <h2 class="text-lg font-semibold mb-4">Pinned Tasks (Max 3)</h2>
-                        <ul class="space-y-2">
-                            ${pinnedTasks.map(t => `<li class="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm">${t.title} - ${t.team}</li>`).join('')}
-                        </ul>
-                    </div>
-                    <div class="bg-bg-color-light p-6 rounded-xl shadow-lg border border-border-color">
-                        <h2 class="text-lg font-semibold mb-4">Pinned Teams (Max 2)</h2>
-                        <ul class="space-y-2">
-                            ${pinnedTeams.map(t => `<li class="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm">${t.name} (${t.members} Members)</li>`).join('')}
-                        </ul>
-                    </div>
+                <div class="bg-bg-color-light p-6 rounded-xl shadow-lg border border-border-color">
+                    <h2 class="text-lg font-semibold mb-4">Pinned Teams (Max 2)</h2>
+                    <ul class="space-y-2">
+                        ${pinnedTeams.map(t => `<li class="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm">${t.name} (${t.members} Members)</li>`).join('')}
+                    </ul>
                 </div>
             </div>
-        `;
-    } catch (error) {
-        console.error("Failed to load dashboard data:", error);
-        return `<p class="text-red-500">Error loading dashboard data. Please check server connection.</p>`;
-    }
+        </div>
+    `;
 }
 
 async function renderTasks() {
-    // Fetches all tasks, grouped by status
-    try {
-        const tasks = await api.getTasksGrouped();
-        
-        const renderTaskCard = (task) => `
-            <div id="task-${task.id}" draggable="true" ondragstart="drag(event)" class="task-card p-3 mb-3 bg-bg-color-light border border-border-color rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                <p class="font-medium text-text-color">${task.title}</p>
-                <div class="flex justify-between items-center text-xs mt-1 text-gray-500">
-                    <span>${task.team}</span>
-                    <span>${task.priority}</span>
-                </div>
+    // --- MOCK DATA RESTORED FOR UI TESTING ---
+    const tasks = {
+        created: [
+            { id: 1, title: "Write Introduction", priority: "High", team: "AQUA" },
+            { id: 2, title: "Setup Project Repository", priority: "Medium", team: "PYRO" },
+        ],
+        in_progress: [
+            { id: 3, title: "Design Landing Page UI", priority: "High", team: "AQUA" },
+        ],
+        completed: [
+            { id: 5, title: "Finalize Team Roles", priority: "Low", team: "All" },
+        ],
+        collaborated: [
+            { id: 6, title: "Review All Code (Team Lead)", priority: "High", team: "Global" },
+        ]
+    };
+    
+    const renderTaskCard = (task) => `
+        <div id="task-${task.id}" draggable="true" ondragstart="drag(event)" class="task-card p-3 mb-3 bg-bg-color-light border border-border-color rounded-lg shadow-sm hover:shadow-md transition-shadow">
+            <p class="font-medium text-text-color">${task.title}</p>
+            <div class="flex justify-between items-center text-xs mt-1 text-gray-500">
+                <span>${task.team}</span>
+                <span>${task.priority}</span>
             </div>
-        `;
+        </div>
+    `;
 
-        const renderTaskColumn = (status, title, taskList) => `
-            <div class="task-column flex flex-col p-4 bg-gray-100 dark:bg-gray-800 rounded-xl shadow-inner border border-border-color">
-                <h2 class="text-lg font-semibold mb-4 text-text-color flex items-center justify-between border-b pb-2 border-border-color">
-                    ${title} <span class="text-sm font-normal text-gray-500">${taskList.length}</span>
-                </h2>
-                <div id="tasks-${status}" class="flex-1 overflow-y-auto min-h-20"
-                    ondrop="drop(event, '${status}')" ondragover="allowDrop(event)">
-                    ${taskList.map(renderTaskCard).join('')}
-                </div>
-                <button class="mt-4 p-2 bg-primary-color/10 text-primary-color rounded-lg hover:bg-primary-color/20 text-sm transition-colors">
-                    <i data-lucide="plus" class="w-4 h-4 inline mr-1"></i> Add Task
-                </button>
+    const renderTaskColumn = (status, title, taskList) => `
+        <div class="task-column flex flex-col p-4 bg-gray-100 dark:bg-gray-800 rounded-xl shadow-inner border border-border-color">
+            <h2 class="text-lg font-semibold mb-4 text-text-color flex items-center justify-between border-b pb-2 border-border-color">
+                ${title} <span class="text-sm font-normal text-gray-500">${taskList.length}</span>
+            </h2>
+            <div id="tasks-${status}" class="flex-1 overflow-y-auto min-h-20"
+                ondrop="drop(event, '${status}')" ondragover="allowDrop(event)">
+                ${taskList.map(renderTaskCard).join('')}
             </div>
-        `;
+            <button class="mt-4 p-2 bg-primary-color/10 text-primary-color rounded-lg hover:bg-primary-color/20 text-sm transition-colors">
+                <i data-lucide="plus" class="w-4 h-4 inline mr-1"></i> Add Task
+            </button>
+        </div>
+    `;
 
-        return `
-            <h1 class="text-3xl font-extrabold mb-6 text-text-color">Tasks Management (Kanban)</h1>
-            <p class="mb-8 text-gray-500 dark:text-gray-400">Drag and drop tasks between columns to update their status.</p>
+    return `
+        <h1 class="text-3xl font-extrabold mb-6 text-text-color">Tasks Management (Kanban)</h1>
+        <p class="mb-8 text-gray-500 dark:text-gray-400">Drag and drop tasks between columns to update their status.</p>
 
-            <div class="flex space-x-6 overflow-x-auto pb-4">
-                ${renderTaskColumn('created', 'Created Tasks', tasks.created)}
-                ${renderTaskColumn('in_progress', 'In Progress Tasks', tasks.in_progress)}
-                ${renderTaskColumn('completed', 'Completed Tasks', tasks.completed)}
-                ${renderTaskColumn('collaborated', 'Collaborated Tasks', tasks.collaborated)}
-            </div>
-        `;
-    } catch (error) {
-        return `<p class="text-red-500">Error loading tasks: ${error.message}</p>`;
-    }
+        <div class="flex space-x-6 overflow-x-auto pb-4">
+            ${renderTaskColumn('created', 'Created Tasks', tasks.created)}
+            ${renderTaskColumn('in_progress', 'In Progress Tasks', tasks.in_progress)}
+            ${renderTaskColumn('completed', 'Completed Tasks', tasks.completed)}
+            ${renderTaskColumn('collaborated', 'Collaborated Tasks', tasks.collaborated)}
+        </div>
+    `;
 }
 
 async function renderTeams() {
-    try {
-        const { pinned, latest } = await api.getTeamsData();
+    // --- MOCK DATA RESTORED FOR UI TESTING ---
+    const teamsData = {
+        pinned: [
+            { id: 'T001', name: "Project Aurora", leader: "John Doe", status: "Active", members: 4 },
+            { id: 'T002', name: "Team Velocity", leader: "Jane Smith", status: "Active", members: 6 }
+        ],
+        latest: [
+            { id: 'T003', name: "Aqua Builders", leader: "MD.MUBEEN HUSSAIN", status: "Inactive", members: 3 },
+            { id: 'T004', name: "Pyro Innovators", leader: "J SAI SATHWIK", status: "Active", members: 5 }
+        ]
+    };
+    const { pinned, latest } = teamsData;
 
-        const renderTeamCard = (team) => `
-            <div class="p-4 bg-bg-color-light rounded-lg shadow-md border border-border-color flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
-                <div>
-                    <p class="font-semibold text-text-color">${team.name}</p>
-                    <p class="text-xs text-gray-500">Leader: ${team.leader}</p>
-                </div>
-                <span class="text-xs font-medium px-2 py-1 rounded-full ${team.status === 'Active' ? 'bg-accent-color/20 text-accent-color' : 'bg-gray-400/20 text-gray-600'}">
-                    ${team.status}
-                </span>
+    const renderTeamCard = (team) => `
+        <div class="p-4 bg-bg-color-light rounded-lg shadow-md border border-border-color flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer">
+            <div>
+                <p class="font-semibold text-text-color">${team.name}</p>
+                <p class="text-xs text-gray-500">Leader: ${team.leader}</p>
             </div>
-        `;
+            <span class="text-xs font-medium px-2 py-1 rounded-full ${team.status === 'Active' ? 'bg-accent-color/20 text-accent-color' : 'bg-gray-400/20 text-gray-600'}">
+                ${team.status}
+            </span>
+        </div>
+    `;
 
-        return `
-            <h1 class="text-3xl font-extrabold mb-6 text-text-color">Teams Hub</h1>
-            <p class="mb-8 text-gray-500 dark:text-gray-400">Manage your project teams, create new ones, or join existing groups.</p>
+    return `
+        <h1 class="text-3xl font-extrabold mb-6 text-text-color">Teams Hub</h1>
+        <p class="mb-8 text-gray-500 dark:text-gray-400">Manage your project teams, create new ones, or join existing groups.</p>
 
-            <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 mb-10 p-6 bg-primary-color/10 rounded-xl border border-primary-color/30">
-                <button onclick="alertModal('Feature', 'Create New Team Form')" class="flex-1 p-3 bg-primary-color text-white rounded-lg font-semibold hover:bg-secondary-color">
-                    <i data-lucide="plus-circle" class="w-5 h-5 inline mr-2"></i> Create New Team
+        <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 mb-10 p-6 bg-primary-color/10 rounded-xl border border-primary-color/30">
+            <button onclick="alertModal('Feature', 'Create New Team Form')" class="flex-1 p-3 bg-primary-color text-white rounded-lg font-semibold hover:bg-secondary-color">
+                <i data-lucide="plus-circle" class="w-5 h-5 inline mr-2"></i> Create New Team
+            </button>
+            <div class="flex-1 flex space-x-2">
+                <input type="text" placeholder="Enter URL / Team Code" class="flex-1 p-3 border border-border-color rounded-lg bg-white dark:bg-gray-700 dark:text-white">
+                <button onclick="alertModal('Feature', 'Joining team via code')" class="p-3 bg-accent-color text-white rounded-lg font-semibold hover:bg-accent-color-hover">
+                     <i data-lucide="log-in" class="w-5 h-5 inline"></i> Join
                 </button>
-                <div class="flex-1 flex space-x-2">
-                    <input type="text" placeholder="Enter URL / Team Code" class="flex-1 p-3 border border-border-color rounded-lg bg-white dark:bg-gray-700 dark:text-white">
-                    <button onclick="alertModal('Feature', 'Joining team via code')" class="p-3 bg-accent-color text-white rounded-lg font-semibold hover:bg-accent-color-hover">
-                         <i data-lucide="log-in" class="w-5 h-5 inline"></i> Join
-                    </button>
-                </div>
             </div>
+        </div>
 
-            <h2 class="text-2xl font-bold mb-4 text-text-color">Pinned Teams</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
-                ${pinned.map(renderTeamCard).join('')}
-            </div>
+        <h2 class="text-2xl font-bold mb-4 text-text-color">Pinned Teams</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+            ${pinned.map(renderTeamCard).join('')}
+        </div>
 
-            <h2 class="text-2xl font-bold mb-4 text-text-color">Other Teams (Latest First)</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                ${latest.map(renderTeamCard).join('')}
-            </div>
-        `;
-    } catch (error) {
-        return `<p class="text-red-500">Error loading teams: ${error.message}</p>`;
-    }
+        <h2 class="text-2xl font-bold mb-4 text-text-color">Other Teams (Latest First)</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ${latest.map(renderTeamCard).join('')}
+        </div>
+    `;
 }
 
 function renderSettings() {
@@ -354,6 +392,7 @@ async function drop(ev, newStatus) {
     const taskElement = document.getElementById(`task-${taskId}`);
 
     try {
+        // This is where you would call the API for real updates
         await api.updateTaskStatus(taskId, newStatus);
         
         const targetContainer = document.getElementById(`tasks-${newStatus}`);
