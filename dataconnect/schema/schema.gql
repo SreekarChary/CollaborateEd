@@ -1,0 +1,58 @@
+type User @table {
+  displayName: String!
+  email: String!
+  createdAt: Timestamp!
+  photoUrl: String
+  academicInstitution: String
+}
+
+type Project @table {
+  title: String!
+  createdAt: Timestamp!
+  isPublic: Boolean!
+  creator: User
+  description: String
+  deadline: Timestamp
+}
+
+type ProjectMember @table(key: ["user", "project"]) {
+  user: User!
+  project: Project!
+  createdAt: Timestamp!
+  role: String!
+  lastAccessedAt: Timestamp
+}
+
+type Task @table {
+  title: String!
+  status: String!
+  createdAt: Timestamp!
+  project: Project
+  assignee: User
+  description: String
+  dueDate: Timestamp
+}
+
+type File @table {
+  filename: String!
+  fileUrl: String!
+  createdAt: Timestamp!
+  project: Project
+  uploader: User
+  description: String
+  mimeType: String
+}
+
+type Discussion @table {
+  title: String!
+  createdAt: Timestamp!
+  project: Project
+  creator: User
+}
+
+type Message @table {
+  content: String!
+  createdAt: Timestamp!
+  discussion: Discussion
+  sender: User
+}

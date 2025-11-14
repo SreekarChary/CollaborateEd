@@ -1,0 +1,24 @@
+mutation CreateProject($title: String!, $description: String!, $isPublic: Boolean!) @auth(level: USER) {
+  project_insert(data: {title: $title, description: $description, isPublic: $isPublic, creatorId_expr: "auth.uid", createdAt_expr: "request.time"})
+}
+
+query ListPublicProjects @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public") {
+  projects(where: {isPublic: {eq: true}}) {
+    id
+    title
+    description
+  }
+}
+
+mutation AddProjectMember($projectId: UUID!, $role: String!) @auth(level: USER) {
+  projectMember_insert(data: {projectId: $projectId, userId_expr: "auth.uid", role: $role, createdAt_expr: "request.time"})
+}
+
+query ListProjectTasks($projectId: UUID!) @auth(level: USER) {
+  tasks(where: {projectId: {eq: $projectId}}) {
+    id
+    title
+    description
+    status
+  }
+}

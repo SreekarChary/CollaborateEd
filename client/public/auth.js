@@ -1,6 +1,7 @@
 // client/public/auth.js - Handles Firebase client-side initialization and session management.
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { alertModal } from './main.js'; // Import utility function from main.js
@@ -8,10 +9,13 @@ import { alertModal } from './main.js'; // Import utility function from main.js
 // 🛑 IMPORTANT: REPLACE WITH YOUR LIVE FIREBASE PROJECT CONFIGURATION 🛑
 // Get these values from your Firebase Project Settings -> Web App Configuration
 const firebaseConfig = {
-    apiKey: "YOUR_CLIENT_API_KEY", 
-    authDomain: "collaborateed-6cac6.firebaseapp.com",
-    projectId: "collaborateed-6cac6",
-    appId: "YOUR_APP_ID" // Find this in your Firebase Web App configuration
+  apiKey: "AIzaSyCKnV15THAo1Q4NFJBGvTi5f8Du1YWxYvY",
+  authDomain: "collaborateed-6cac6.firebaseapp.com",
+  projectId: "collaborateed-6cac6",
+  storageBucket: "collaborateed-6cac6.firebasestorage.app",
+  messagingSenderId: "319921793333",
+  appId: "1:319921793333:web:67d78b0fa8190e8656447c",
+  measurementId: "G-3YDN92R8VK"
 };
 // ----------------------------------------------------------------------
 
@@ -22,6 +26,7 @@ export let currentUserId = null;
 // Initialize Firebase
 try {
     const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
     db = getFirestore(app);
     auth = getAuth(app);
 

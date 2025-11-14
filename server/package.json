@@ -8,9 +8,10 @@
     "dev": "./node_modules/.bin/nodemon src/server.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
+    "@dataconnect/admin-generated": "file:src/dataconnect-admin-generated",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
+    "express": "^4.19.2",
     "firebase-admin": "^12.1.0",
     "socket.io": "^4.7.5"
   },

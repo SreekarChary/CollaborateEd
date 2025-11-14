@@ -4,7 +4,7 @@
   "description": "Student Collaboration and Project Hub full-stack application.",
   "main": "server/src/server.js",
   "scripts": {
-    "server": "npm run dev --prefix server", 
+    "server": "npm run dev --prefix server",
     "client": "live-server client/public --port=8080",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "install:all": "npm install && cd server && npm install"
@@ -17,7 +17,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@dataconnect/generated": "file:src/dataconnect-generated",
     "concurrently": "^8.2.2",
+    "firebase": "^12.5.0",
     "live-server": "^1.2.2"
   }
 }

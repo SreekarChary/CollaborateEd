@@ -1,0 +1,48 @@
+mutation CreateSeedData @transaction @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public") {
+  user_insertMany(data: [
+    {
+      id: "550e8400-e29b-41d4-a716-446655440000",
+      displayName: "demouser1",
+      email: "demouser1@example.com",
+      createdAt: "2024-01-01T00:00:00Z"
+    },
+    {
+      id: "550e8400-e29b-41d4-a716-446655440001",
+      displayName: "demouser2",
+      email: "demouser2@example.com",
+      createdAt: "2024-01-01T00:00:00Z"
+    }
+  ])
+  project_insertMany(data: [
+    {
+      id: "660e8400-e29b-41d4-a716-446655440000",
+      creatorId: "550e8400-e29b-41d4-a716-446655440000",
+      title: "Demo Project 1",
+      isPublic: true,
+      createdAt: "2024-01-02T00:00:00Z"
+    },
+    {
+      id: "660e8400-e29b-41d4-a716-446655440001",
+      creatorId: "550e8400-e29b-41d4-a716-446655440001",
+      title: "Demo Project 2",
+      isPublic: false,
+      createdAt: "2024-01-02T00:00:00Z"
+    }
+  ])
+  task_insertMany(data: [
+    {
+      id: "770e8400-e29b-41d4-a716-446655440000",
+      projectId: "660e8400-e29b-41d4-a716-446655440000",
+      title: "Demo Task 1",
+      status: "Open",
+      createdAt: "2024-01-03T00:00:00Z"
+    },
+    {
+      id: "770e8400-e29b-41d4-a716-446655440001",
+      projectId: "660e8400-e29b-41d4-a716-446655440001",
+      title: "Demo Task 2",
+      status: "In Progress",
+      createdAt: "2024-01-03T00:00:00Z"
+    }
+  ])
+}

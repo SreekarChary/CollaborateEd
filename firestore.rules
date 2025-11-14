@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // This rule allows any authenticated user to read and write data.
+    // This makes the application immediately functional.
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
